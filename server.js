@@ -3,11 +3,13 @@ var clients = [];
 
 net.createServer(function (client) {
   clients.push(client);
-  client.write("à la recherche du temps perdu... oh, mon ami, who art thou?");
+  client.setEncoding("utf8");
+  
+  client.write("à la recherche du temps perdu... oh, mon ami, who art thou?\n\t");
   
   client.on('data', function(data){
 	if(!client.name) {
-		client.name = data;
+		client.name = data.match(/\S+/); //ignoring line breaks (\n) from our tcp client :)
 		console.log(client.name + " has joined proust. sounds fun.");
 	} else {
 		client.broadcast(data);
@@ -20,11 +22,13 @@ net.createServer(function (client) {
   });
   
   client.broadcast = function(data) {
+	var message = this.name + ">" + data;
 	for(var i = 0; i < clients.length; i++) {
 		if(clients[i] == this) continue;
-		clients[i].write(this.name + ">" + data);
+		clients[i].write(message);
 	}
   };
   
 }).listen(1337);
+
 console.log('Proust running (on TCP) at port 1337');

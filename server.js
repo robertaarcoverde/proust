@@ -1,6 +1,10 @@
-﻿var http = require('http');
-http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain; charset="UTF-8"'});
-  res.end('à la recherche du temps perdu...\n');
-}).listen(1337, '127.0.0.1');
-console.log('Proust running at http://127.0.0.1:1337/');
+﻿var net = require('net');
+var clients = [];
+
+net.createServer(function (client) {
+  clients.push(client);  
+  
+  client.write("à la recherche du temps perdu...");	
+  
+}).listen(1337);
+console.log('Proust running (on TCP) at port 1337');

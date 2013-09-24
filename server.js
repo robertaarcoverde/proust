@@ -9,18 +9,24 @@ var Clients = (function(){
 		clients.push(client);
 		
 		client.setEncoding("utf8");
-		client.write("à la recherche du temps perdu... oh, mon ami, who art thou?\n\t");
+		client.write("\nwho art thou?\n\t");
 	}
 	
 	return {
 		add : addClient,
-		login : function(client) {
-			client.name = data.match(/\S+/); //ignoring line breaks (\n) from our tcp client :)
+		login : function(client, name) {
+			client.name = name.match(/\S+/); //ignoring line breaks (\n) from our tcp client
 			client.write(client.name + " has joined proust. sounds fun.");
 		},
 		logout : function (client) {
 			var i = clients.indexOf(client);
 			clients.splice(i,1);
+		},
+		broadcast : function(from, message) {
+			for(var i = 0; i < clients.length; i++) {
+				if(clients[i] == from) continue;
+				clients[i].write(message);
+			}
 		}
 	};
 })();
@@ -30,7 +36,7 @@ net.createServer(function (client) {
   
 	client.on('data', function(data){
 		if(!client.name) {
-			Clients.login(client);
+			Clients.login(client,data);
 		} else {
 			client.broadcast(data);
 		}
@@ -42,10 +48,7 @@ net.createServer(function (client) {
 
 	client.broadcast = function(data) {
 		var message = this.name + ">" + data;
-		for(var i = 0; i < clients.length; i++) {
-			if(clients[i] == this) continue;
-			clients[i].write(message);
-		}
+		Clients.broadcast(client, message);		
 	};
 }).listen(1337);
 

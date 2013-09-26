@@ -10,6 +10,11 @@ var Clients = (function(){
 		
 		client.setEncoding("utf8");
 		client.write("\nwho art thou?\n\t");
+		
+		client.broadcast = function(data) {
+			var message = this.name + ">" + data;
+			Clients.broadcast(client, message);		
+		};
 	}
 	
 	return {
@@ -20,7 +25,7 @@ var Clients = (function(){
 		},
 		logout : function (client) {
 			var i = clients.indexOf(client);
-			clients.splice(i,1);
+			clients.splice(i,1);			
 		},
 		broadcast : function(from, message) {
 			for(var i = 0; i < clients.length; i++) {
@@ -46,10 +51,6 @@ net.createServer(function (client) {
 		Clients.logout(client);
 	});
 
-	client.broadcast = function(data) {
-		var message = this.name + ">" + data;
-		Clients.broadcast(client, message);		
-	};
 }).listen(1337);
 
 console.log('Proust running (on TCP) at port 1337');

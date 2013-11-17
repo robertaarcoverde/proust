@@ -2,6 +2,7 @@
 var Clients = (function(){
 	
 	var clients = [];
+	var self = this;
 	
 	function addClient(client) {
 		if(clients.indexOf(client) >= 0) return;					
@@ -14,6 +15,14 @@ var Clients = (function(){
 		client.broadcast = function(data) {
 			var message = this.name + ">" + data;
 			Clients.broadcast(client, message);		
+		};		
+
+		client.process = function(data) {
+			if(!client.name) {
+				Clients.login(client,data);
+			} else {
+				client.broadcast(data);
+			}
 		};
 	}
 	
@@ -39,12 +48,8 @@ var Clients = (function(){
 net.createServer(function (client) {
 	Clients.add(client)
   
-	client.on('data', function(data){
-		if(!client.name) {
-			Clients.login(client,data);
-		} else {
-			client.broadcast(data);
-		}
+	client.on('data', function(data){		
+		client.process(data);		
 	});  
   
 	client.on('end', function(){

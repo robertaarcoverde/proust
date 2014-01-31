@@ -1,4 +1,6 @@
 ﻿var net = require('net');
+
+//var processor = new CommandProcessor();
 var Clients = (function(){
 	
 	var clients = [];
@@ -10,36 +12,52 @@ var Clients = (function(){
 		clients.push(client);
 		
 		client.setEncoding("utf8");
-		client.write("\nwho art thou?\n\t");
-		
-		client.broadcast = function(data) {
-			var message = this.name + ">" + data;
-			Clients.broadcast(client, message);		
-		};		
+		client.write("\nwho art thou?\n\t");		
+	}
 
-		client.process = function(data) {
-			if(!client.name) {
-				Clients.login(client,data);
-			} else {
-				client.broadcast(data);
-			}
-		};
+	function broadcast(from, message) {
+		var msg = from.name + '> ' + message;
+		for(var i = 0; i < clients.length; i++) {
+			if(clients[i] == from) continue;
+			clients[i].write(msg);
+		}
+	}
+
+	function privateMessage(from, to, message) {
+		//send message to user in pvt
+		for(var i = 0; i < clients.length; i++) {
+			if(clients[i].name == to) {
+				clients[i].write(from.name + ' (pvt)> ' + message);
+			}					
+		}
+	}
+
+	function login(client, name) {
+		client.name = name.match(/\S+/); //ignoring line breaks (\n) from our tcp client
+		client.write(client.name + " has joined proust. sounds fun.");
+	}
+
+	function logout(client) {
+		var i = clients.indexOf(client);
+		clients.splice(i,1);			
 	}
 	
 	return {
 		add : addClient,
-		login : function(client, name) {
-			client.name = name.match(/\S+/); //ignoring line breaks (\n) from our tcp client
-			client.write(client.name + " has joined proust. sounds fun.");
-		},
-		logout : function (client) {
-			var i = clients.indexOf(client);
-			clients.splice(i,1);			
-		},
-		broadcast : function(from, message) {
-			for(var i = 0; i < clients.length; i++) {
-				if(clients[i] == from) continue;
-				clients[i].write(message);
+		logout : logout,
+		process : function(client, message){
+			if(!client.name) {
+				login(client,message);
+			} else if (message.indexOf("/pvt") == 0){				
+				var tokens = message.split(' ');
+				var user = tokens[1];				
+				var pvtMessage = tokens[2];
+				privateMessage(client, user, pvtMessage);				
+			} else if(message.indexOf("/quit") == 0) {
+				logout(client);
+			} else {
+				//broadcasting
+				broadcast(client, message);
 			}
 		}
 	};
@@ -49,13 +67,13 @@ net.createServer(function (client) {
 	Clients.add(client)
   
 	client.on('data', function(data){		
-		client.process(data);		
+		Clients.process(client, data);
 	});  
   
 	client.on('end', function(){
 		Clients.logout(client);
 	});
 
-}).listen(1337);
+}).listen(13237);
 
-console.log('Proust running (on TCP) at port 1337');
+console.log('Proust running (on TCP) at port 13237');

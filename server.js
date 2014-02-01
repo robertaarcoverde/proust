@@ -27,14 +27,15 @@ var Clients = (function(){
 		//send message to user in pvt
 		for(var i = 0; i < clients.length; i++) {
 			if(clients[i].name == to) {
-				clients[i].write(from.name + ' (pvt)> ' + message);
+				from.write("*** Sent private msg to " + to);
+				clients[i].write('*' + from.name + '* ' + message);
 			}					
 		}
 	}
 
 	function login(client, name) {
 		client.name = name.match(/\S+/); //ignoring line breaks (\n) from our tcp client
-		client.write(client.name + " has joined proust. sounds fun.");
+		client.write('***' + client.name + " has joined proust. sounds fun. for now, this is a single-channel IRC server");
 	}
 
 	function logout(client) {
@@ -48,13 +49,15 @@ var Clients = (function(){
 		process : function(client, message){
 			if(!client.name) {
 				login(client,message);
-			} else if (message.indexOf("/pvt") == 0){				
+			} else if (message.indexOf("/msg") == 0){
 				var tokens = message.split(' ');
 				var user = tokens[1];				
 				var pvtMessage = tokens[2];
 				privateMessage(client, user, pvtMessage);				
 			} else if(message.indexOf("/quit") == 0) {
 				logout(client);
+			} else if (message.indexOf("/me") == 0) {
+				broadcast(client, '* '+ client.name + ' ' + message.substr(4));
 			} else {
 				//broadcasting
 				broadcast(client, message);

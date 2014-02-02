@@ -1,8 +1,6 @@
 ﻿var net = require('net');
 
-//var processor = new CommandProcessor();
-var Clients = (function(){
-	
+var Clients = (function(){	
 	var clients = [];
 	var self = this;
 	
@@ -12,14 +10,17 @@ var Clients = (function(){
 		clients.push(client);
 		
 		client.setEncoding("utf8");
-		client.write("\nwho art thou?\n\t");		
+		client.write("\n\t*** who art thou?\n\t>");
 	}
 
-	function broadcast(from, message) {
-		var msg = from.name + '> ' + message;
+	function broadcast(message, from) {
+		if(from) { 
+			message = from.name + '> ' + message; 
+		}
+
 		for(var i = 0; i < clients.length; i++) {
-			if(clients[i] == from) continue;
-			clients[i].write(msg);
+			if(from && clients[i] == from) continue;
+			clients[i].write(message);
 		}
 	}
 
@@ -27,7 +28,7 @@ var Clients = (function(){
 		//send message to user in pvt
 		for(var i = 0; i < clients.length; i++) {
 			if(clients[i].name == to) {
-				from.write("*** Sent private msg to " + to);
+				from.write("*** Sent private msg to " + to + '\n\t');
 				clients[i].write('*' + from.name + '* ' + message);
 			}					
 		}
@@ -35,7 +36,7 @@ var Clients = (function(){
 
 	function login(client, name) {
 		client.name = name.match(/\S+/); //ignoring line breaks (\n) from our tcp client
-		client.write('***' + client.name + " has joined proust. sounds fun. for now, this is a single-channel IRC server");
+		client.write('*** ' + client.name + " has joined proust. sounds fun. for now, this is a single-channel IRC server\n");
 	}
 
 	function logout(client) {
@@ -50,17 +51,17 @@ var Clients = (function(){
 			if(!client.name) {
 				login(client,message);
 			} else if (message.indexOf("/msg") == 0){
-				var tokens = message.split(' ');
-				var user = tokens[1];				
+				var tokens = message.match(/\/msg\s(\w+)\s(.*)/);
+				var user = tokens[1];
 				var pvtMessage = tokens[2];
 				privateMessage(client, user, pvtMessage);				
 			} else if(message.indexOf("/quit") == 0) {
-				logout(client);
+				broadcast('*** ' + client.name + ' has left');
+				client.end();
 			} else if (message.indexOf("/me") == 0) {
-				broadcast(client, '* '+ client.name + ' ' + message.substr(4));
-			} else {
-				//broadcasting
-				broadcast(client, message);
+				broadcast('* '+ client.name + ' ' + message.substr(4));
+			} else {				
+				broadcast(message, client);
 			}
 		}
 	};

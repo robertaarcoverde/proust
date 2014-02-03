@@ -1,8 +1,7 @@
 ﻿var net = require('net');
 
 var Clients = (function(){	
-	var clients = [];
-	var self = this;
+	var clients = [];	
 	
 	function addClient(client) {
 		if(clients.indexOf(client) >= 0) return;					
@@ -10,12 +9,12 @@ var Clients = (function(){
 		clients.push(client);
 		
 		client.setEncoding("utf8");
-		client.write("\n\t*** who art thou?\n\t>");
+		client.write("\n*** who art thou?\n>");
 	}
 
 	function broadcast(message, from) {
 		if(from) { 
-			message = from.name + '> ' + message; 
+			message = from.name + '> ' + message;
 		}
 
 		for(var i = 0; i < clients.length; i++) {
@@ -28,20 +27,34 @@ var Clients = (function(){
 		//send message to user in pvt
 		for(var i = 0; i < clients.length; i++) {
 			if(clients[i].name == to) {
-				from.write("*** Sent private msg to " + to + '\n\t');
+				from.write("*** Sent private msg to " + to + '\n');
 				clients[i].write('*' + from.name + '* ' + message);
 			}					
 		}
 	}
 
+	function changeNickname(client, newNickname){
+		broadcast('*** ' + client.name + ' is now known as ' + newNickname + '\n');
+		client.name = newNickname;		
+	}
+
+	function listUsers(client){
+		client.write('\n');
+		for(var i = 0; i < clients.length; i++) {						
+			client.write('- ' + clients[i].name + '\n');
+		}	
+	}
+
 	function login(client, name) {
 		client.name = name.match(/\S+/); //ignoring line breaks (\n) from our tcp client
-		client.write('*** ' + client.name + " has joined proust. sounds fun. for now, this is a single-channel IRC server\n");
+		var loginMessage = '*** ' + client.name + " has just joined proust.\n";
+		broadcast(loginMessage);
 	}
 
 	function logout(client) {
 		var i = clients.indexOf(client);
-		clients.splice(i,1);			
+		clients.splice(i,1);
+		broadcast('*** ' + client.name + ' has left\n');
 	}
 	
 	return {
@@ -56,10 +69,15 @@ var Clients = (function(){
 				var pvtMessage = tokens[2];
 				privateMessage(client, user, pvtMessage);				
 			} else if(message.indexOf("/quit") == 0) {
-				broadcast('*** ' + client.name + ' has left');
+				logout(client);
 				client.end();
 			} else if (message.indexOf("/me") == 0) {
 				broadcast('* '+ client.name + ' ' + message.substr(4));
+			} else if (message.indexOf("/nick") == 0) {
+				var newNickname = message.substring(6).match(/\S+/);
+				changeNickname(client, newNickname);
+			} else if(message.indexOf("/names") == 0) {
+				listUsers(client);
 			} else {				
 				broadcast(message, client);
 			}
